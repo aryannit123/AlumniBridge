@@ -8,8 +8,6 @@ import {
     FaUserShield, FaUnlock, FaChartBar, FaTimes, FaPlus,
     FaChalkboardTeacher, FaBriefcase, FaCalendarAlt, FaNewspaper
 } from 'react-icons/fa';
-
-import { HiSparkles } from 'react-icons/hi';
 import useIsMobile from '../hooks/useIsMobile';
 
 /* ── font injection ──────────────────────────────────────────────────────── */
@@ -179,7 +177,7 @@ const Admin = () => {
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, marginBottom: isMobile ? 28 : 40, flexWrap: 'wrap' }}>
                     <div>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--blue-faint)', border: '1px solid var(--blue-border)', borderRadius: 20, padding: '5px 14px', marginBottom: 16 }}>
-                            <HiSparkles style={{ color: 'var(--blue-light)', fontSize: 13 }} />
+                            <FaUserShield style={{ color: 'var(--blue-light)', fontSize: 13 }} />
                             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-light)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Administrator</span>
                         </div>
                         <h1 style={{ fontFamily: "'Sora', sans-serif", fontSize: isMobile ? 28 : 36, fontWeight: 800, margin: '0 0 8px', color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>

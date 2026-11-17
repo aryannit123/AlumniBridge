@@ -4,9 +4,16 @@ const ThemeContext = createContext(null);
 
 export const ThemeProvider = ({ children }) => {
     const [isDark, setIsDark] = useState(() => {
+        // 1️⃣ Prefer saved user choice
         const saved = localStorage.getItem('theme');
-        return saved ? saved === 'dark' : true; // default dark
-    });
+        if (saved) return saved === 'dark';
+        // 2️⃣ Fallback to OS preference – avoids flash of wrong theme
+        if (typeof window !== 'undefined' && window.matchMedia) {
+          return window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+        // 3️⃣ Default to light if all else fails
+        return false;
+      });
 
     useEffect(() => {
         const root = document.documentElement;

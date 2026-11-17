@@ -4,134 +4,422 @@ import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import {
-    FaArrowLeft, FaRegClock, FaUserAlt, FaShareAlt,
-    FaTag, FaBookmark, FaHeart, FaComment
-} from 'react-icons/fa';
-import { HiSparkles } from 'react-icons/hi';
+  LuArrowLeft,
+  LuClock,
+  LuUser,
+  LuShare2,
+  LuBookmark,
+  LuTag,
+  LuHeart,
+  LuMessageSquare,
+  LuCheck
+} from 'react-icons/lu';
+
+const getCategoryBadgeStyle = (category) => {
+  switch (category?.toLowerCase()) {
+    case 'achievement':
+      return { bg: 'rgba(224, 122, 63, 0.12)', color: 'var(--primary)', border: 'rgba(224, 122, 63, 0.25)' };
+    case 'announcement':
+      return { bg: 'rgba(30, 58, 95, 0.1)', color: 'var(--navy)', border: 'rgba(30, 58, 95, 0.2)' };
+    case 'story':
+      return { bg: 'rgba(16, 185, 129, 0.12)', color: '#10b981', border: 'rgba(16, 185, 129, 0.25)' };
+    case 'update':
+      return { bg: 'rgba(99, 102, 241, 0.12)', color: '#6366f1', border: 'rgba(99, 102, 241, 0.25)' };
+    default:
+      return { bg: 'var(--panel)', color: 'var(--text-secondary)', border: 'var(--border)' };
+  }
+};
 
 const NewsDetail = () => {
-    const { id } = useParams();
-    const navigate = useNavigate();
-    const { user } = useAuth();
-    const [item, setItem] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [item, setItem] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [liked, setLiked] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
 
-    useEffect(() => {
-        fetchNewsItem();
-    }, [id]);
+  useEffect(() => {
+    fetchNewsItem();
+  }, [id]);
 
-    const fetchNewsItem = async () => {
-        setLoading(true);
-        try {
-            const { data } = await API.get(`/news/${id}`);
-            setItem(data.news);
-        } catch (err) {
-            toast.error('Failed to load story');
-            navigate('/news');
-        } finally {
-            setLoading(false);
-        }
-    };
+  const fetchNewsItem = async () => {
+    setLoading(true);
+    try {
+      const { data } = await API.get(`/news/${id}`);
+      setItem(data.news);
+    } catch (err) {
+      toast.error('Failed to load story');
+      navigate('/news');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    if (loading) return (
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-            <div style={{ width: 45, height: 45, borderRadius: '50%', border: '3px solid var(--blue-faint)', borderTopColor: 'var(--blue-light)', animation: 'spin 1s linear infinite' }} />
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
-    );
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator
+        .share({
+          title: item?.title,
+          text: item?.summary || item?.title,
+          url: window.location.href,
+        })
+        .catch(() => {});
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast.info('Story link copied to clipboard!');
+    }
+  };
 
-    if (!item) return null;
-
+  if (loading) {
     return (
-        <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text-primary)', fontFamily: "'DM Sans', sans-serif" }}>
-            {/* ARTICLE HEADER */}
-            <div style={{ maxWidth: 900, margin: '0 auto', padding: '120px 24px 60px' }}>
-                <Link to="/news" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)', textDecoration: 'none', fontSize: 13, fontWeight: 700, marginBottom: 40, transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--blue-light)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
-                    <FaArrowLeft style={{ fontSize: 11 }} /> Back to Stories
-                </Link>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                    <span style={{ background: 'var(--blue-faint)', color: 'var(--blue-light)', padding: '5px 14px', borderRadius: 20, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                        {item.category}
-                    </span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <FaRegClock /> {new Date(item.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </span>
-                </div>
-
-                <h1 style={{ fontFamily: "'Sora', sans-serif", fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: 800, margin: '0 0 32px', lineHeight: 1.15, letterSpacing: '-1px' }}>
-                    {item.title}
-                </h1>
-
-                {/* AUTHOR ROW */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 32, borderBottom: '1px solid var(--border)', marginBottom: 48 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--blue-faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--blue-border)', overflow: 'hidden' }}>
-                            {item.author?.profileImage ? <img src={item.author.profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <FaUserAlt style={{ color: 'var(--blue-light)', fontSize: 18 }} />}
-                        </div>
-                        <div>
-                            <p style={{ fontSize: 14.5, fontWeight: 700, margin: 0 }}>{item.author?.name || 'Student Contributor'}</p>
-                            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>NIT Jamshedpur Student</p>
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: 10 }}>
-                        <button style={{ width: 40, height: 40, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--blue-border)'; e.currentTarget.style.color = 'var(--blue-light)'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
-                            <FaShareAlt />
-                        </button>
-                        <button style={{ width: 40, height: 40, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--blue-border)'; e.currentTarget.style.color = 'var(--blue-light)'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
-                            <FaBookmark />
-                        </button>
-                    </div>
-                </div>
-
-                {/* FEATURED IMAGE */}
-                {item.image && (
-                    <div style={{ width: '100%', height: 480, borderRadius: 24, overflow: 'hidden', marginBottom: 48, boxShadow: '0 20px 60px var(--card-shadow)' }}>
-                        <img src={item.image} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-                )}
-
-                {/* CONTENT */}
-                <div style={{ fontSize: 18, lineHeight: 1.85, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', marginBottom: 60 }}>
-                    {item.content}
-                </div>
-
-                {/* TAGS */}
-                {item.tags?.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 60, padding: '24px 0', borderTop: '1px solid var(--border)' }}>
-                        {item.tags.map((tag, idx) => (
-                            <span key={idx} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '6px 16px', borderRadius: 10, fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <FaTag style={{ fontSize: 11, color: 'var(--blue-light)' }} /> {tag}
-                            </span>
-                        ))}
-                    </div>
-                )}
-
-                {/* FOOTER ACTIONS */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '24px 32px', borderRadius: 20, background: 'var(--bg-secondary)', border: '1px solid var(--border)', width: 'fit-content' }}>
-                    <button style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                        <FaHeart style={{ fontSize: 18, color: '#ff4b5c' }} /> Like
-                    </button>
-                    <button style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                        <FaComment style={{ fontSize: 18, color: 'var(--blue-light)' }} /> 0 Comments
-                    </button>
-                </div>
-            </div>
-
-            {/* RELATED SECTION (Placeholder) */}
-            <div style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)', padding: '100px 24px' }}>
-                <div style={{ maxWidth: 900, margin: '0 auto' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                        <HiSparkles style={{ color: 'var(--blue-light)' }} />
-                        <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--blue-light)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Recommended</span>
-                    </div>
-                    <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 28, fontWeight: 800, margin: '0 0 40px' }}>More from Alumni Stories</h2>
-                    <p style={{ color: 'var(--text-muted)' }}>Stories coming soon...</p>
-                </div>
-            </div>
-        </div>
+      <div
+        style={{
+          minHeight: '80vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'var(--page)',
+        }}
+      >
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            border: '3px solid var(--border)',
+            borderTopColor: 'var(--primary)',
+            animation: 'spin 0.8s linear infinite',
+          }}
+        />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
     );
+  }
+
+  if (!item) return null;
+
+  const badgeStyle = getCategoryBadgeStyle(item.category);
+  const createdDate = new Date(item.createdAt);
+
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'var(--page)',
+        color: 'var(--text-primary)',
+        padding: '36px 20px 96px',
+      }}
+    >
+      <article style={{ maxWidth: 840, margin: '0 auto' }}>
+        {/* Navigation & Action Bar */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 32,
+          }}
+        >
+          <Link
+            to="/news"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              color: 'var(--text-secondary)',
+              textDecoration: 'none',
+              fontSize: 13.5,
+              fontWeight: 600,
+              padding: '8px 14px',
+              borderRadius: 'var(--radius-button, 8px)',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              transition: 'color 0.15s ease',
+            }}
+          >
+            <LuArrowLeft size={15} /> Back to Stories
+          </Link>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              onClick={handleShare}
+              title="Share story"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 14px',
+                borderRadius: 'var(--radius-button, 8px)',
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-secondary)',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <LuShare2 size={14} /> Share
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setBookmarked(!bookmarked);
+                toast.info(bookmarked ? 'Story removed from bookmarks' : 'Story bookmarked!');
+              }}
+              title="Save story"
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 'var(--radius-button, 8px)',
+                background: bookmarked ? 'rgba(224, 122, 63, 0.12)' : 'var(--surface)',
+                border: bookmarked ? '1px solid var(--primary)' : '1px solid var(--border)',
+                color: bookmarked ? 'var(--primary)' : 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <LuBookmark size={15} />
+            </button>
+          </div>
+        </div>
+
+        {/* Story Category & Date */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              background: badgeStyle.bg,
+              color: badgeStyle.color,
+              border: `1px solid ${badgeStyle.border}`,
+              borderRadius: 16,
+              padding: '4px 12px',
+              fontSize: 11.5,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
+          >
+            {item.category || 'Alumni Story'}
+          </span>
+
+          <span
+            style={{
+              fontSize: 13,
+              color: 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+            }}
+          >
+            <LuClock size={13} />
+            {createdDate.toLocaleDateString('en-US', {
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+          </span>
+        </div>
+
+        {/* Story Headline */}
+        <h1
+          style={{
+            fontFamily: 'var(--font-heading)',
+            fontSize: 'clamp(28px, 4vw, 42px)',
+            fontWeight: 800,
+            lineHeight: 1.25,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.5px',
+            margin: '0 0 24px',
+          }}
+        >
+          {item.title}
+        </h1>
+
+        {/* Author Byline Card */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '16px 20px',
+            borderRadius: 'var(--radius-card, 12px)',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            marginBottom: 36,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                background: 'var(--panel)',
+                border: '1px solid var(--border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--primary)',
+                fontWeight: 700,
+                fontSize: 15,
+                overflow: 'hidden',
+              }}
+            >
+              {item.author?.profileImage ? (
+                <img
+                  src={item.author.profileImage}
+                  alt={item.author.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : item.author?.name ? (
+                item.author.name.charAt(0).toUpperCase()
+              ) : (
+                <LuUser size={20} />
+              )}
+            </div>
+
+            <div>
+              <p style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: 'var(--text-primary)' }}>
+                {item.author?.name || 'Alumni Contributor'}
+              </p>
+              <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>
+                NIT Jamshedpur Community
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Featured Image */}
+        {item.image && (
+          <div
+            style={{
+              width: '100%',
+              borderRadius: 'var(--radius-card, 12px)',
+              overflow: 'hidden',
+              marginBottom: 36,
+              background: 'var(--panel)',
+              border: '1px solid var(--border)',
+              maxHeight: 460,
+            }}
+          >
+            <img
+              src={item.image}
+              alt={item.title}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          </div>
+        )}
+
+        {/* Story Body */}
+        <div
+          style={{
+            fontSize: 16.5,
+            lineHeight: 1.85,
+            color: 'var(--text-primary)',
+            whiteSpace: 'pre-wrap',
+            marginBottom: 44,
+          }}
+        >
+          {item.content}
+        </div>
+
+        {/* Tags Row */}
+        {item.tags?.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              paddingTop: 20,
+              borderTop: '1px solid var(--border)',
+              marginBottom: 36,
+            }}
+          >
+            {item.tags.map((tag, idx) => (
+              <span
+                key={idx}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '5px 12px',
+                  borderRadius: 6,
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  fontSize: 12,
+                  color: 'var(--text-secondary)',
+                  fontWeight: 500,
+                }}
+              >
+                <LuTag size={11} style={{ color: 'var(--primary)' }} />
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Article Reaction Bar */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16,
+            padding: '16px 20px',
+            borderRadius: 'var(--radius-card, 12px)',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            width: 'fit-content',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setLiked(!liked)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              background: 'none',
+              border: 'none',
+              fontSize: 13.5,
+              fontWeight: 600,
+              cursor: 'pointer',
+              color: liked ? '#e11d48' : 'var(--text-secondary)',
+              transition: 'color 0.15s ease',
+            }}
+          >
+            <LuHeart size={16} style={{ fill: liked ? '#e11d48' : 'none' }} />
+            {liked ? 'Liked' : 'Applaud Story'}
+          </button>
+
+          <div style={{ width: 1, height: 16, background: 'var(--border)' }} />
+
+          <button
+            type="button"
+            onClick={handleShare}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              background: 'none',
+              border: 'none',
+              fontSize: 13.5,
+              fontWeight: 600,
+              cursor: 'pointer',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <LuShare2 size={16} /> Share with Batchmates
+          </button>
+        </div>
+      </article>
+    </div>
+  );
 };
 
 export default NewsDetail;

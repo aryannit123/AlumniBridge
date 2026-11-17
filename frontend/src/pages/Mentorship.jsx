@@ -2,216 +2,728 @@ import { useState, useEffect } from 'react';
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import { 
-    FaChalkboardTeacher, FaSearch, FaFilter, FaUserAlt, 
-    FaBriefcase, FaGraduationCap, FaStar, FaClock, FaCheckCircle,
-    FaPlus, FaTimes, FaDollarSign, FaLanguage, FaLaptopCode
-} from 'react-icons/fa';
-import { HiSparkles } from 'react-icons/hi';
-
-const inputSx = {
-    width: '100%', background: 'var(--input-bg)', border: '1px solid var(--border)',
-    borderRadius: 12, padding: '12px 16px', color: 'var(--text-primary)', fontSize: 14,
-    outline: 'none', fontFamily: "'DM Sans', sans-serif",
-    transition: 'all 0.2s', boxSizing: 'border-box',
-};
+import {
+  LuUserCheck,
+  LuSearch,
+  LuFilter,
+  LuBriefcase,
+  LuGraduationCap,
+  LuClock,
+  LuCircleCheck,
+  LuPlus,
+  LuX,
+  LuTag,
+  LuUser
+} from 'react-icons/lu';
 
 const Mentorship = () => {
-    const { user } = useAuth();
-    const [mentors, setMentors] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [showOptIn, setShowOptIn] = useState(false);
-    const [filters, setFilters] = useState({ domain: '', company: '', type: '' });
-    const [optInData, setOptInData] = useState({
-        domain: '', experience: '', bio: '', type: 'free', price: 0
-    });
+  const { user } = useAuth();
+  const [mentors, setMentors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showOptIn, setShowOptIn] = useState(false);
+  const [filters, setFilters] = useState({ domain: '', company: '', type: '' });
+  const [search, setSearch] = useState('');
+  const [optInData, setOptInData] = useState({
+    domain: '',
+    experience: '',
+    bio: '',
+    type: 'free',
+    price: 0,
+  });
 
-    useEffect(() => {
-        fetchMentors();
-    }, [filters]);
+  useEffect(() => {
+    fetchMentors();
+  }, [filters]);
 
-    const fetchMentors = async () => {
-        setLoading(true);
-        try {
-            const { data } = await API.get('/mentors', { params: filters });
-            setMentors(data.mentors);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const fetchMentors = async () => {
+    setLoading(true);
+    try {
+      const { data } = await API.get('/mentors', { params: filters });
+      setMentors(data.mentors || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleOptIn = async (e) => {
-        e.preventDefault();
-        try {
-            const submitData = {
-                ...optInData,
-                domain: optInData.domain.split(',').map(d => d.trim()).filter(Boolean)
-            };
-            await API.post('/mentors', submitData);
-            toast.success('Successfully opted in as mentor!');
-            setShowOptIn(false);
-            fetchMentors();
-        } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to opt in');
-        }
-    };
+  const handleOptIn = async (e) => {
+    e.preventDefault();
+    try {
+      const submitData = {
+        ...optInData,
+        experience: Number(optInData.experience) || 0,
+        price: Number(optInData.price) || 0,
+        domain: optInData.domain
+          .split(',')
+          .map((d) => d.trim())
+          .filter(Boolean),
+      };
+      await API.post('/mentors', submitData);
+      toast.success('Successfully registered as an alumni mentor!');
+      setShowOptIn(false);
+      fetchMentors();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to opt in');
+    }
+  };
 
+  const filteredMentors = mentors.filter((m) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
     return (
-        <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '60px 24px 100px', fontFamily: "'DM Sans', sans-serif", color: 'var(--text-primary)' }}>
-            <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-                {/* HEADER */}
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24, marginBottom: 48, flexWrap: 'wrap' }}>
-                    <div>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--blue-faint)', border: '1px solid var(--blue-border)', borderRadius: 20, padding: '6px 16px', marginBottom: 16 }}>
-                            <HiSparkles style={{ color: 'var(--blue-light)', fontSize: 13 }} />
-                            <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--blue-light)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Mentorship Program</span>
-                        </div>
-                        <h1 style={{ fontFamily: "'Sora', sans-serif", fontSize: 'clamp(32px, 5vw, 44px)', fontWeight: 800, margin: '0 0 12px', letterSpacing: '-1px', lineHeight: 1.1 }}>
-                            Empowering the Next <span style={{ background: 'linear-gradient(135deg, var(--blue-light), #6B8FE8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Generation</span>
-                        </h1>
-                        <p style={{ fontSize: 16, color: 'var(--text-secondary)', maxWidth: 600, lineHeight: 1.6 }}>
-                            Connect with experienced seniors and peers for guidance in career, startups, and academic excellence.
-                        </p>
-                    </div>
-
-                    {!showOptIn && (
-                        <button onClick={() => setShowOptIn(true)} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'linear-gradient(135deg, var(--blue-light), var(--blue))', color: '#fff', border: 'none', borderRadius: 14, padding: '14px 28px', fontSize: 14, fontWeight: 800, cursor: 'pointer', boxShadow: '0 10px 25px rgba(32,54,113,0.35)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
-                            <FaPlus /> Become a Mentor
-                        </button>
-                    )}
-                </div>
-
-                {/* OPT-IN FORM */}
-                {showOptIn && (
-                    <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--blue-border)', borderRadius: 24, padding: 40, marginBottom: 48, boxShadow: '0 20px 60px var(--card-shadow)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-                            <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 24, fontWeight: 800, margin: 0 }}>Mentor Registration</h2>
-                            <button onClick={() => setShowOptIn(false)} style={{ background: 'var(--bg)', border: '1px solid var(--border)', width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)' }}><FaTimes /></button>
-                        </div>
-
-                        <form onSubmit={handleOptIn} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                                <div>
-                                    <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, display: 'block' }}>Key Skills / Domains (comma separated) *</label>
-                                    <input placeholder="DSA, Machine Learning, UI Design..." value={optInData.domain} onChange={e => setOptInData({ ...optInData, domain: e.target.value })} style={inputSx} required />
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                    <div>
-                                        <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, display: 'block' }}>Experience (Years) *</label>
-                                        <input type="number" value={optInData.experience} onChange={e => setOptInData({ ...optInData, experience: e.target.value })} style={inputSx} required />
-                                    </div>
-                                    <div>
-                                        <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, display: 'block' }}>Mentor Type *</label>
-                                        <select value={optInData.type} onChange={e => setOptInData({ ...optInData, type: e.target.value })} style={inputSx}>
-                                            <option value="free">Free Mentorship</option>
-                                            <option value="paid">Paid sessions</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                {optInData.type === 'paid' && (
-                                    <div>
-                                        <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, display: 'block' }}>Fee per Session (₹)</label>
-                                        <div style={{ position: 'relative' }}>
-                                            <FaDollarSign style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                            <input type="number" value={optInData.price} onChange={e => setOptInData({ ...optInData, price: e.target.value })} style={{ ...inputSx, paddingLeft: 32 }} />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                                <div>
-                                    <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, display: 'block' }}>Professional Bio *</label>
-                                    <textarea placeholder="Tell potential mentees about your journey and how you can help..." value={optInData.bio} onChange={e => setOptInData({ ...optInData, bio: e.target.value })} style={{ ...inputSx, height: 160, resize: 'none' }} required />
-                                </div>
-                                <button type="submit" style={{ background: 'var(--blue)', color: '#fff', border: 'none', borderRadius: 14, padding: '16px', fontSize: 15, fontWeight: 800, cursor: 'pointer', marginTop: 'auto' }}>Complete Registration →</button>
-                            </div>
-                        </form>
-                    </div>
-                )}
-
-                {/* FILTER BAR */}
-                <div style={{ display: 'flex', gap: 12, marginBottom: 40, flexWrap: 'wrap' }}>
-                    <div style={{ flex: '1 1 200px', position: 'relative' }}>
-                        <FaSearch style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                        <input placeholder="Search skills, bio..." style={{ ...inputSx, paddingLeft: 38 }} />
-                    </div>
-                    <div style={{ flex: '1 1 180px' }}>
-                        <input placeholder="Company..." style={inputSx} onChange={e => setFilters({ ...filters, company: e.target.value })} />
-                    </div>
-                    <div style={{ flex: '1 1 180px' }}>
-                        <select style={inputSx} onChange={e => setFilters({ ...filters, type: e.target.value })}>
-                            <option value="">Any Plan</option>
-                            <option value="free">Free</option>
-                            <option value="paid">Paid</option>
-                        </select>
-                    </div>
-                </div>
-
-                {/* MENTORS GRID */}
-                {loading ? (
-                    <div style={{ textAlign: 'center', padding: '100px 0' }}>
-                        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid var(--blue-faint)', borderTopColor: 'var(--blue-light)', animation: 'spin 1s linear infinite', margin: '0 auto' }} />
-                    </div>
-                ) : mentors.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: 80, background: 'var(--bg-secondary)', borderRadius: 24, border: '1px solid var(--border)' }}>
-                        <FaChalkboardTeacher style={{ fontSize: 40, color: 'var(--blue-light)', marginBottom: 20 }} />
-                        <h3 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>No Mentors Found</h3>
-                        <p style={{ color: 'var(--text-secondary)' }}>Try adjusting your search filters.</p>
-                    </div>
-                ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24 }}>
-                        {mentors.map(mentor => (
-                            <div key={mentor._id} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 20, overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'all 0.25s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--blue-border)'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 30px var(--card-shadow)'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                                <div style={{ padding: 24 }}>
-                                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                                            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'var(--blue-faint)', border: '1px solid var(--blue-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                                {mentor.user?.profileImage ? <img src={mentor.user.profileImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <FaUserAlt style={{ color: 'var(--blue-light)', fontSize: 20 }} />}
-                                            </div>
-                                            <div>
-                                                <h3 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 4px' }}>{mentor.user?.name}</h3>
-                                                <p style={{ fontSize: 12, color: 'var(--blue-light)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{mentor.user?.company || 'Student'}</p>
-                                            </div>
-                                        </div>
-                                        <div style={{ background: mentor.type === 'free' ? 'var(--green-faint)' : 'var(--blue-faint)', color: mentor.type === 'free' ? '#22c55e' : 'var(--blue-light)', padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>
-                                            {mentor.type === 'free' ? 'Free' : `₹${mentor.price}`}
-                                        </div>
-                                    </div>
-
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-                                        {mentor.domain.map((d, i) => (
-                                            <span key={i} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>{d}</span>
-                                        ))}
-                                    </div>
-
-                                    <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 20px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                        {mentor.bio}
-                                    </p>
-
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)' }}>
-                                            <FaBriefcase style={{ color: 'var(--blue-light)', fontSize: 12 }} />
-                                            <span>{mentor.experience} yrs exp.</span>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)' }}>
-                                            <FaCheckCircle style={{ color: '#22c55e', fontSize: 12 }} />
-                                            <span>Verified</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div style={{ padding: '0 24px 24px', marginTop: 'auto' }}>
-                                    <button style={{ width: '100%', background: 'var(--blue-faint)', border: '1px solid var(--blue-border)', borderRadius: 12, padding: '12px', color: 'var(--blue-light)', fontSize: 13.5, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = 'var(--blue)'; e.currentTarget.style.color = '#fff'; }}>Book a Session</button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
+      m.user?.name?.toLowerCase().includes(q) ||
+      m.user?.company?.toLowerCase().includes(q) ||
+      m.bio?.toLowerCase().includes(q) ||
+      m.domain?.some((d) => d.toLowerCase().includes(q))
     );
+  });
+
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'var(--page)',
+        padding: '36px 20px 80px',
+        color: 'var(--text-primary)',
+      }}
+    >
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        {/* Header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 20,
+            marginBottom: 32,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'rgba(30, 58, 95, 0.08)',
+                color: 'var(--navy)',
+                borderRadius: 20,
+                padding: '4px 12px',
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                marginBottom: 10,
+              }}
+            >
+              <LuUserCheck size={13} style={{ color: 'var(--primary)' }} />
+              1-ON-1 ALUMNI ADVISORY
+            </div>
+            <h1
+              style={{
+                fontFamily: 'var(--font-heading)',
+                fontSize: 32,
+                fontWeight: 800,
+                margin: '0 0 8px',
+                color: 'var(--text-primary)',
+                letterSpacing: '-0.5px',
+              }}
+            >
+              Alumni Mentorship Program
+            </h1>
+            <p style={{ fontSize: 15, color: 'var(--text-secondary)', margin: 0, maxWidth: 640 }}>
+              Receive trusted guidance on campus placements, higher studies, civil services, and startup journeys from
+              experienced graduates.
+            </p>
+          </div>
+
+          {!showOptIn && user && (
+            <button
+              type="button"
+              onClick={() => setShowOptIn(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'var(--primary)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: 'var(--radius-button, 8px)',
+                padding: '10px 20px',
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(224, 122, 63, 0.25)',
+              }}
+            >
+              <LuPlus size={15} /> Become a Mentor
+            </button>
+          )}
+        </div>
+
+        {/* Opt-In Registration Card */}
+        {showOptIn && (
+          <div
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-card, 12px)',
+              padding: '28px',
+              marginBottom: 36,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.06)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingBottom: 16,
+                borderBottom: '1px solid var(--border)',
+                marginBottom: 24,
+              }}
+            >
+              <div>
+                <h2
+                  style={{
+                    fontFamily: 'var(--font-heading)',
+                    fontSize: 19,
+                    fontWeight: 700,
+                    margin: 0,
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  Register as an Alumni Mentor
+                </h2>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+                  Give back to junior students by offering mock interviews, resume critiques, or career guidance.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOptIn(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  padding: 4,
+                }}
+              >
+                <LuX size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleOptIn}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                  gap: 16,
+                  marginBottom: 16,
+                }}
+              >
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                    Key Focus Areas & Skills (Comma-separated) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. System Design, Product Management, Data Science"
+                    value={optInData.domain}
+                    onChange={(e) => setOptInData({ ...optInData, domain: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 'var(--radius-input, 8px)',
+                      border: '1px solid var(--border)',
+                      background: 'var(--surface)',
+                      color: 'var(--text-primary)',
+                      fontSize: 14,
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                    Industry Experience (Years) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    placeholder="e.g. 4"
+                    value={optInData.experience}
+                    onChange={(e) => setOptInData({ ...optInData, experience: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 'var(--radius-input, 8px)',
+                      border: '1px solid var(--border)',
+                      background: 'var(--surface)',
+                      color: 'var(--text-primary)',
+                      fontSize: 14,
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                    Mentorship Model
+                  </label>
+                  <select
+                    value={optInData.type}
+                    onChange={(e) => setOptInData({ ...optInData, type: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 'var(--radius-input, 8px)',
+                      border: '1px solid var(--border)',
+                      background: 'var(--surface)',
+                      color: 'var(--text-primary)',
+                      fontSize: 14,
+                      outline: 'none',
+                      cursor: 'pointer',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <option value="free">Complimentary / Pro-bono Mentorship</option>
+                    <option value="paid">Structured Paid Advisory</option>
+                  </select>
+                </div>
+
+                {optInData.type === 'paid' && (
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                      Fee per Session (₹)
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="e.g. 500"
+                      value={optInData.price}
+                      onChange={(e) => setOptInData({ ...optInData, price: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        borderRadius: 'var(--radius-input, 8px)',
+                        border: '1px solid var(--border)',
+                        background: 'var(--surface)',
+                        color: 'var(--text-primary)',
+                        fontSize: 14,
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  Mentor Bio & How You Help *
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  placeholder="Share a brief overview of your background, companies you've worked with, and what students can expect from your sessions..."
+                  value={optInData.bio}
+                  onChange={(e) => setOptInData({ ...optInData, bio: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius-input, 8px)',
+                    border: '1px solid var(--border)',
+                    background: 'var(--surface)',
+                    color: 'var(--text-primary)',
+                    fontSize: 14,
+                    outline: 'none',
+                    resize: 'vertical',
+                    lineHeight: 1.6,
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowOptIn(false)}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: 'var(--radius-button, 8px)',
+                    background: 'transparent',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-secondary)',
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '10px 24px',
+                    borderRadius: 'var(--radius-button, 8px)',
+                    background: 'var(--primary)',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(224, 122, 63, 0.3)',
+                  }}
+                >
+                  Complete Mentor Profile
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Filters Toolbar */}
+        <div
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-card, 12px)',
+            padding: '16px 20px',
+            marginBottom: 28,
+            display: 'flex',
+            gap: 12,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ position: 'relative', flex: '1 1 240px' }}>
+            <LuSearch
+              size={15}
+              style={{
+                position: 'absolute',
+                left: 12,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--text-muted)',
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Search by mentor name, skill, or keyword..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '9px 12px 9px 34px',
+                borderRadius: 'var(--radius-input, 8px)',
+                border: '1px solid var(--border)',
+                background: 'var(--page)',
+                color: 'var(--text-primary)',
+                fontSize: 13.5,
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          <div style={{ flex: '0 1 200px' }}>
+            <input
+              type="text"
+              placeholder="Filter by company..."
+              value={filters.company}
+              onChange={(e) => setFilters({ ...filters, company: e.target.value })}
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: 'var(--radius-input, 8px)',
+                border: '1px solid var(--border)',
+                background: 'var(--page)',
+                color: 'var(--text-primary)',
+                fontSize: 13.5,
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          <div style={{ flex: '0 1 180px' }}>
+            <select
+              value={filters.type}
+              onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: 'var(--radius-input, 8px)',
+                border: '1px solid var(--border)',
+                background: 'var(--page)',
+                color: 'var(--text-primary)',
+                fontSize: 13.5,
+                outline: 'none',
+                cursor: 'pointer',
+                boxSizing: 'border-box',
+              }}
+            >
+              <option value="">All Session Types</option>
+              <option value="free">Complimentary</option>
+              <option value="paid">Paid Sessions</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Mentors Grid */}
+        {loading ? (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap: 24,
+            }}
+          >
+            {[1, 2, 3, 4, 5, 6].map((idx) => (
+              <div
+                key={idx}
+                style={{
+                  height: 280,
+                  borderRadius: 'var(--radius-card, 12px)',
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  animation: 'pulse 1.5s infinite',
+                }}
+              />
+            ))}
+          </div>
+        ) : filteredMentors.length === 0 ? (
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '64px 24px',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-card, 12px)',
+            }}
+          >
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 14,
+                background: 'var(--panel)',
+                border: '1px solid var(--border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px',
+                color: 'var(--text-muted)',
+              }}
+            >
+              <LuUserCheck size={24} />
+            </div>
+            <h3
+              style={{
+                fontFamily: 'var(--font-heading)',
+                fontSize: 18,
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                margin: '0 0 6px',
+              }}
+            >
+              No mentors found
+            </h3>
+            <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', margin: 0 }}>
+              Try broadening your keyword search or adjusting company filters.
+            </p>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap: 24,
+            }}
+          >
+            {filteredMentors.map((mentor) => (
+              <article
+                key={mentor._id}
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-card, 12px)',
+                  padding: '24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 16,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                  transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--primary)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.06)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.03)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: '50%',
+                        background: 'var(--panel)',
+                        border: '1px solid var(--border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--primary)',
+                        fontWeight: 700,
+                        fontSize: 15,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {mentor.user?.profileImage ? (
+                        <img
+                          src={mentor.user.profileImage}
+                          alt={mentor.user.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        mentor.user?.name?.charAt(0)?.toUpperCase() || <LuUser size={20} />
+                      )}
+                    </div>
+                    <div>
+                      <h3
+                        style={{
+                          fontFamily: 'var(--font-heading)',
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: 'var(--text-primary)',
+                          margin: '0 0 2px',
+                        }}
+                      >
+                        {mentor.user?.name}
+                      </h3>
+                      <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-secondary)' }}>
+                        {mentor.user?.company || 'NIT JSR Alumni'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <span
+                    style={{
+                      fontSize: 11.5,
+                      fontWeight: 700,
+                      borderRadius: 16,
+                      padding: '3px 9px',
+                      background: mentor.type === 'free' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(224, 122, 63, 0.12)',
+                      color: mentor.type === 'free' ? '#10b981' : 'var(--primary)',
+                      border: `1px solid ${mentor.type === 'free' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(224, 122, 63, 0.25)'}`,
+                    }}
+                  >
+                    {mentor.type === 'free' ? 'Free' : `₹${mentor.price}`}
+                  </span>
+                </div>
+
+                {/* Domains */}
+                {mentor.domain?.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {mentor.domain.map((d, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          background: 'var(--panel)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 6,
+                          padding: '2px 8px',
+                          fontSize: 11,
+                          color: 'var(--text-secondary)',
+                          fontWeight: 500,
+                        }}
+                      >
+                        {d}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Bio */}
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--text-secondary)',
+                    lineHeight: 1.6,
+                    margin: 0,
+                    flex: 1,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {mentor.bio}
+                </p>
+
+                {/* Footer with Experience & Connect */}
+                <div
+                  style={{
+                    paddingTop: 12,
+                    borderTop: '1px solid var(--border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--text-muted)' }}>
+                    <LuBriefcase size={12} style={{ color: 'var(--primary)' }} />
+                    {mentor.experience} yrs exp.
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toast.info(`Reach out to ${mentor.user?.name} via direct Messages in the navbar!`);
+                    }}
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: 'var(--radius-button, 8px)',
+                      background: 'var(--panel)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-primary)',
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'var(--primary)';
+                      e.currentTarget.style.color = '#ffffff';
+                      e.currentTarget.style.borderColor = 'var(--primary)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'var(--panel)';
+                      e.currentTarget.style.color = 'var(--text-primary)';
+                      e.currentTarget.style.borderColor = 'var(--border)';
+                    }}
+                  >
+                    Request Mentorship
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default Mentorship;

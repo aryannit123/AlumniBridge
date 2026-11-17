@@ -2,180 +2,332 @@ import { useState, useEffect } from 'react';
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import {
-    FaCrown, FaCheck, FaRocket, FaGem, FaArrowRight,
-    FaCreditCard, FaRegCalendarCheck, FaHistory, FaInfoCircle
-} from 'react-icons/fa';
-import { HiSparkles } from 'react-icons/hi';
+import { LuCheck, LuInfo, LuShieldCheck, LuArrowRight } from 'react-icons/lu';
+import Button from '../components/ui/Button';
+
+const plans = [
+  {
+    name: 'Alumni Basic',
+    price: 'Free',
+    priceSuffix: '',
+    desc: 'Standard networking access for all verified students & alumni.',
+    features: [
+      'Alumni directory search',
+      'Event registrations & RSVPs',
+      'Community news & stories',
+      'Direct peer messaging',
+    ],
+    key: 'basic',
+    highlight: false,
+  },
+  {
+    name: 'Elite Membership',
+    price: '\u20B9999',
+    priceSuffix: '/ year',
+    desc: 'Enhanced visibility, priority mentorship, and job board posting.',
+    features: [
+      'Advanced directory filters (company & title)',
+      '1-on-1 mentorship priority queue',
+      'Job and internship posting rights',
+      'Verified Alumni Member badge',
+      'Direct alumni contact introductions',
+    ],
+    key: 'premium',
+    highlight: true,
+  },
+  {
+    name: 'Lifetime Legacy',
+    price: '\u20B94,999',
+    priceSuffix: 'one-time',
+    desc: 'Permanent lifetime access and contribution to student funds.',
+    features: [
+      'All Elite Membership features permanently',
+      'Distinguished Wall of Fame recognition',
+      'Annual alumni meet VIP privileges',
+      'Lifetime digital member credentials',
+      'Exclusive student scholarship voting rights',
+    ],
+    key: 'lifetime',
+    highlight: false,
+  },
+];
 
 const Membership = () => {
-    const { user, loadUser } = useAuth();
-    const [loading, setLoading] = useState(true);
-    const [status, setStatus] = useState(null);
-    const [processing, setProcessing] = useState(false);
+  const { user, loadUser } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState(null);
+  const [processing, setProcessing] = useState(false);
 
-    useEffect(() => {
-        fetchStatus();
-    }, []);
+  useEffect(() => {
+    fetchStatus();
+  }, []);
 
-    const fetchStatus = async () => {
-        try {
-            const { data } = await API.get('/membership/status');
-            setStatus(data);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const fetchStatus = async () => {
+    try {
+      const { data } = await API.get('/membership/status');
+      setStatus(data);
+    } catch (err) {
+      console.error('Error fetching membership status:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleSubscription = async (plan) => {
-        setProcessing(true);
-        try {
-            // 1. Create Order
-            const { data } = await API.post('/membership/order', { plan });
+  const handleSubscription = async (planKey) => {
+    setProcessing(true);
+    try {
+      const { data } = await API.post('/membership/order', { plan: planKey });
+      if (data.isMock) {
+        toast.info('Development Mode: Simulating secure payment...');
+        setTimeout(async () => {
+          await API.post('/membership/verify', {
+            razorpay_order_id: data.order.id,
+            razorpay_payment_id: 'pay_mock_' + Date.now(),
+            razorpay_signature: 'mock_sig',
+            plan: planKey,
+          });
+          toast.success(`${planKey.toUpperCase()} Membership successfully activated!`);
+          fetchStatus();
+          if (loadUser) loadUser();
+          setProcessing(false);
+        }, 1200);
+        return;
+      }
+      toast.warning('Razorpay payment gateway credentials not set.');
+      setProcessing(false);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Transaction could not be completed');
+      setProcessing(false);
+    }
+  };
 
-            if (data.isMock) {
-                // Handle Mock Payment for Dev
-                toast.info('Development Mode: Simulating Payment...');
-                setTimeout(async () => {
-                    await API.post('/membership/verify', {
-                        razorpay_order_id: data.order.id,
-                        razorpay_payment_id: 'pay_mock_' + Date.now(),
-                        razorpay_signature: 'mock_sig',
-                        plan
-                    });
-                    toast.success(`${plan.toUpperCase()} Membership Activated!`);
-                    fetchStatus();
-                    loadUser(); // Refresh user context
-                    setProcessing(false);
-                }, 1500);
-                return;
-            }
-
-            // Real Razorpay Integration would go here using window.Razorpay
-            toast.warning('Razorpay keys not configured. Use mock mode or add keys.');
-            setProcessing(false);
-
-        } catch (err) {
-            toast.error(err.response?.data?.message || 'Transaction failed');
-            setProcessing(false);
-        }
-    };
-
-    if (loading) return (
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-            <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid var(--blue-faint)', borderTopColor: 'var(--blue-light)', animation: 'spin 1s linear infinite' }} />
-        </div>
-    );
-
+  if (loading) {
     return (
-        <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '80px 24px 120px', fontFamily: "'DM Sans', sans-serif" }}>
-            <div style={{ maxWidth: 1000, margin: '0 auto', textAlign: 'center' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--blue-faint)', border: '1px solid var(--blue-border)', borderRadius: 20, padding: '6px 16px', marginBottom: 20 }}>
-                    <FaCrown style={{ color: 'var(--blue-light)', fontSize: 13 }} />
-                    <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--blue-light)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Membership Plans</span>
-                </div>
+      <div
+        style={{
+          minHeight: '60vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div className="spinner" />
+      </div>
+    );
+  }
 
-                <h1 style={{ fontFamily: "'Sora', sans-serif", fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: 800, margin: '0 0 16px', letterSpacing: '-1.5px', color: 'var(--text-primary)' }}>
-                    Unlock Premium <span style={{ color: 'var(--blue-light)' }}>Privileges</span>
-                </h1>
-                <p style={{ fontSize: 16, color: 'var(--text-secondary)', maxWidth: 600, margin: '0 auto 60px', lineHeight: 1.6 }}>
-                    Join our exclusive membership to access advanced search, premium networking, and special event discounts.
+  const currentPlan = status?.membership?.plan || 'basic';
+
+  return (
+    <div style={{ padding: '64px 24px 96px', maxWidth: 1120, margin: '0 auto' }}>
+      {/* Page Header */}
+      <div style={{ textAlign: 'center', marginBottom: 48 }}>
+        <div className="badge badge-accent" style={{ marginBottom: 12 }}>
+          Support Your Alma Mater
+        </div>
+        <h1
+          style={{
+            fontFamily: 'var(--font-heading)',
+            fontSize: 'clamp(28px, 4.5vw, 42px)',
+            fontWeight: 800,
+            color: 'var(--color-text)',
+            marginBottom: 12,
+          }}
+        >
+          Membership Plans & Privileges
+        </h1>
+        <p
+          style={{
+            fontSize: 16,
+            color: 'var(--color-text-secondary)',
+            maxWidth: 580,
+            margin: '0 auto',
+            lineHeight: 1.6,
+          }}
+        >
+          Support student scholarships, sponsor campus technical clubs, and gain priority networking privileges across batches.
+        </p>
+      </div>
+
+      {/* Pricing Plans Grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: 24,
+          marginBottom: 48,
+          alignItems: 'stretch',
+        }}
+      >
+        {plans.map((p) => {
+          const isCurrent = currentPlan === p.key;
+
+          return (
+            <div
+              key={p.key}
+              className="card"
+              style={{
+                padding: 32,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                borderColor: p.highlight ? 'var(--color-accent)' : undefined,
+                borderWidth: p.highlight ? 2 : 1,
+                position: 'relative',
+              }}
+            >
+              {p.highlight && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: -12,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: 'var(--color-accent)',
+                    color: '#FFFFFF',
+                    padding: '4px 14px',
+                    borderRadius: 20,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Most Popular
+                </div>
+              )}
+
+              <div>
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-heading)',
+                    fontSize: 20,
+                    fontWeight: 700,
+                    color: 'var(--color-text)',
+                    marginBottom: 6,
+                  }}
+                >
+                  {p.name}
+                </h3>
+                <p
+                  style={{
+                    fontSize: 13.5,
+                    color: 'var(--color-text-secondary)',
+                    marginBottom: 20,
+                    minHeight: 40,
+                  }}
+                >
+                  {p.desc}
                 </p>
 
-                {/* PLANS GRID */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 32, marginBottom: 80 }}>
-                    {/* BASIC */}
-                    <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 28, padding: 40, textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ marginBottom: 32 }}>
-                            <h3 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 8px' }}>Alumni Basic</h3>
-                            <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>Standard access for all students</p>
-                        </div>
-                        <div style={{ fontSize: 32, fontWeight: 800, margin: '0 0 40px' }}>Free</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 48, flex: 1 }}>
-                            {['Directory Search', 'Event RSVP', 'News & Stories', 'Basic Networking'].map((f, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 14.5, color: 'var(--text-secondary)' }}>
-                                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--blue-faint)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <FaCheck style={{ color: 'var(--blue-light)', fontSize: 10 }} />
-                                    </div>
-                                    {f}
-                                </div>
-                            ))}
-                        </div>
-                        <button disabled style={{ width: '100%', padding: '16px', borderRadius: 14, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 15, fontWeight: 700 }}>Current Plan</button>
-                    </div>
-
-                    {/* PREMIUM - HIGH LIGHTED */}
-                    <div style={{ background: 'var(--bg-secondary)', border: '2px solid var(--blue-light)', borderRadius: 28, padding: 40, textAlign: 'left', display: 'flex', flexDirection: 'column', position: 'relative', boxShadow: '0 20px 50px var(--card-shadow)' }}>
-                        <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: 'var(--blue-light)', color: '#fff', padding: '6px 16px', borderRadius: 20, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Most Popular</div>
-                        <div style={{ marginBottom: 32 }}>
-                            <h3 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 8px' }}>Elite Premium</h3>
-                            <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>Enhanced features & credibility</p>
-                        </div>
-                        <div style={{ fontSize: 32, fontWeight: 800, margin: '0 0 40px' }}>₹999 <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>/ year</span></div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 48, flex: 1 }}>
-                            {['Advanced Search Filters', 'Mentorship Priority', 'Job Posting Privileges', 'Verified Member Badge', 'No Registration Limits'].map((f, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 14.5, color: 'var(--text-secondary)' }}>
-                                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--blue-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <FaCheck style={{ color: '#fff', fontSize: 10 }} />
-                                    </div>
-                                    {f}
-                                </div>
-                            ))}
-                        </div>
-                        <button
-                            onClick={() => handleSubscription('premium')}
-                            disabled={processing || status?.membership?.plan === 'premium'}
-                            style={{ width: '100%', padding: '16px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg, var(--blue-light), var(--blue))', color: '#fff', fontSize: 15, fontWeight: 800, cursor: 'pointer', boxShadow: '0 10px 20px rgba(32,54,113,0.3)', transition: 'all 0.2s' }}
-                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-                        >
-                            {status?.membership?.plan === 'premium' ? 'Plan Active' : processing ? 'Processing...' : 'Get Premium →'}
-                        </button>
-                    </div>
-
-                    {/* LIFETIME */}
-                    <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 28, padding: 40, textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ marginBottom: 32 }}>
-                            <h3 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 8px' }}>Lifetime Legacy</h3>
-                            <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>One-time payment forever</p>
-                        </div>
-                        <div style={{ fontSize: 32, fontWeight: 800, margin: '0 0 40px' }}>₹4,999</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 48, flex: 1 }}>
-                            {['All Premium Features', 'Wall of Fame Recognition', 'Exclusive Alumni Meetup', 'Lifetime Access Token', 'VIP Support'].map((f, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 14.5, color: 'var(--text-secondary)' }}>
-                                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--blue-faint)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <FaCheck style={{ color: 'var(--blue-light)', fontSize: 10 }} />
-                                    </div>
-                                    {f}
-                                </div>
-                            ))}
-                        </div>
-                        <button
-                            onClick={() => handleSubscription('lifetime')}
-                            disabled={processing || status?.membership?.plan === 'lifetime'}
-                            style={{ width: '100%', padding: '16px', borderRadius: 14, border: '1px solid var(--blue-border)', background: 'var(--blue-faint)', color: 'var(--blue-light)', fontSize: 15, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
-                        >
-                            {status?.membership?.plan === 'lifetime' ? 'Plan Active' : 'Go Lifetime'}
-                        </button>
-                    </div>
+                <div style={{ marginBottom: 24 }}>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-heading)',
+                      fontSize: 34,
+                      fontWeight: 800,
+                      color: 'var(--color-text)',
+                    }}
+                  >
+                    {p.price}
+                  </span>
+                  {p.priceSuffix && (
+                    <span
+                      style={{
+                        fontSize: 13.5,
+                        color: 'var(--color-text-muted)',
+                        marginLeft: 6,
+                      }}
+                    >
+                      {p.priceSuffix}
+                    </span>
+                  )}
                 </div>
 
-                {/* FOOTER INFO */}
-                <div style={{ background: 'var(--blue-faint)', border: '1px solid var(--blue-border)', borderRadius: 24, padding: 32, display: 'flex', alignItems: 'center', gap: 24, textAlign: 'left' }}>
-                    <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--blue-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 20 }}>
-                        <FaInfoCircle />
+                {/* Features List */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 12,
+                    marginBottom: 28,
+                    borderTop: '1px solid var(--color-border)',
+                    paddingTop: 20,
+                  }}
+                >
+                  {p.features.map((feat) => (
+                    <div
+                      key={feat}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        fontSize: 13.5,
+                        color: 'var(--color-text)',
+                      }}
+                    >
+                      <LuCheck
+                        size={16}
+                        strokeWidth={2.2}
+                        style={{ color: 'var(--color-success)', flexShrink: 0 }}
+                      />
+                      <span>{feat}</span>
                     </div>
-                    <div>
-                        <h4 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 4px' }}>Secure Payments with Razorpay</h4>
-                        <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: 0 }}>Your data is protected with enterprise-grade encryption. Support available 24/7 for payment queries.</p>
-                    </div>
+                  ))}
                 </div>
+              </div>
+
+              {/* Action Button */}
+              <div>
+                {isCurrent ? (
+                  <Button variant="secondary" size="md" disabled className="w-full">
+                    Current Plan
+                  </Button>
+                ) : p.key === 'basic' ? (
+                  <Button variant="secondary" size="md" disabled className="w-full">
+                    Included with Account
+                  </Button>
+                ) : (
+                  <Button
+                    variant={p.highlight ? 'primary' : 'secondary'}
+                    size="md"
+                    className="w-full"
+                    onClick={() => handleSubscription(p.key)}
+                    disabled={processing}
+                    loading={processing}
+                  >
+                    {p.highlight ? 'Upgrade to Elite' : 'Choose Lifetime'} <LuArrowRight size={14} />
+                  </Button>
+                )}
+              </div>
             </div>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          );
+        })}
+      </div>
+
+      {/* Security & Guarantee Note */}
+      <div
+        className="card"
+        style={{
+          padding: 24,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          background: 'var(--color-panel)',
+        }}
+      >
+        <LuShieldCheck
+          size={24}
+          strokeWidth={1.8}
+          style={{ color: 'var(--color-accent)', flexShrink: 0 }}
+        />
+        <div style={{ fontSize: 13.5, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+          <strong style={{ color: 'var(--color-text)' }}>Institutional Trust & Transparency: </strong>
+          All membership fees directly support student competitive coding chapters, campus solar initiatives, and hardship travel grants for student conferences.
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default Membership;

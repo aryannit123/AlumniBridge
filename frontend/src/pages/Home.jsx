@@ -1,284 +1,754 @@
-import { useEffect, useRef } from 'react';
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
 import {
-    FaBriefcase, FaCalendarAlt, FaNewspaper, FaUsers,
-    FaQuestionCircle, FaArrowRight, FaGraduationCap,
-    FaLinkedin, FaHandshake, FaGlobe,
-} from 'react-icons/fa';
-import { HiSparkles } from 'react-icons/hi';
+  LuSearch,
+  LuArrowRight,
+  LuUsers,
+  LuBriefcase,
+  LuGraduationCap,
+  LuCompass,
+  LuShieldCheck,
+  LuBuilding2,
+  LuMapPin,
+} from 'react-icons/lu';
+import Button from '../components/ui/Button';
 
-/* ── font + keyframes injection ──────────────────────────────────────────── */
-if (typeof document !== 'undefined' && !document.getElementById('home-styles')) {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Sora:wght@400;600;700;800&display=swap';
-    document.head.appendChild(link);
-
-    const style = document.createElement('style');
-    style.id = 'home-styles';
-    style.textContent = `
-        @keyframes spin  { to { transform: rotate(360deg); } }
-        @keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
-        @keyframes pulse-ring { 0% { transform: scale(0.9); opacity:0.6; } 100% { transform: scale(1.6); opacity:0; } }
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(28px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to   { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes shimmer {
-            0%   { background-position: -200% center; }
-            100% { background-position:  200% center; }
-        }
-        .nav-link { color: #8A94A8; text-decoration: none; font-size: 13.5px; font-weight: 500; transition: color 0.2s; }
-        .nav-link:hover { color: #FFFFFF; }
-        .feature-card { transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s; }
-        .feature-card:hover { border-color: rgba(32,54,113,0.5) !important; box-shadow: 0 12px 40px rgba(32,54,113,0.22) !important; transform: translateY(-3px); }
-        .stat-card { transition: border-color 0.25s, background 0.25s; }
-        .stat-card:hover { border-color: rgba(32,54,113,0.4) !important; background: #161A28 !important; }
-        .primary-btn { transition: opacity 0.2s, transform 0.15s; }
-        .primary-btn:hover { opacity: 0.88; transform: translateY(-1px); }
-        .ghost-btn { transition: background 0.2s, border-color 0.2s; }
-        .ghost-btn:hover { background: rgba(32,54,113,0.12) !important; border-color: rgba(32,54,113,0.5) !important; }
-    `;
-    document.head.appendChild(style);
-}
-
-/* ── hero ────────────────────────────────────────────────────────── */
-const Hero = ({ user }) => (
-    <section style={{
-        minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '60px 20px', position: 'relative', overflow: 'hidden',
-        background: 'var(--bg)',
-        transition: 'background 0.3s'
-    }}>
-        {/* background grid */}
-        <div style={{
-            position: 'absolute', inset: 0, zIndex: 0,
-            backgroundImage: `
-                linear-gradient(var(--blue-faint) 1px, transparent 1px),
-                linear-gradient(90deg, var(--blue-faint) 1px, transparent 1px)
-            `,
-            backgroundSize: '60px 60px',
-        }} />
-        {/* radial glow */}
-        <div style={{
-            position: 'absolute', top: '10%', left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: 700, height: 400, borderRadius: '50%',
-            background: `radial-gradient(ellipse, var(--blue-faint) 0%, transparent 70%)`,
-            pointerEvents: 'none',
-        }} />
-
-        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 780 }}>
-            {/* badge */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--blue-faint)', border: '1px solid var(--blue-border)', borderRadius: 20, padding: '6px 16px', marginBottom: 28, animation: 'fadeUp 0.6s ease both' }}>
-                <HiSparkles style={{ color: 'var(--blue-light)', fontSize: 13 }} />
-                <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--blue-light)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-                    Alumni Portal · Est. 2026
-                </span>
-            </div>
-
-            {/* headline */}
-            <h1 style={{
-                fontFamily: "'Sora', sans-serif",
-                fontSize: 'clamp(32px, 6vw, 68px)',
-                fontWeight: 800, color: 'var(--text-primary)',
-                lineHeight: 1.1, margin: '0 0 24px',
-                letterSpacing: '-1.2px',
-                animation: 'fadeUp 0.7s ease 0.1s both',
-            }}>
-                A Place Where NIT Jamshedpur<br />
-                <span style={{
-                    background: `linear-gradient(135deg, var(--text-primary) 0%, var(--blue-light) 40%, #6B8FE8 100%)`,
-                    backgroundSize: '200% auto',
-                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                    animation: 'shimmer 4s linear infinite',
-                }}>Alumni Connect</span>
-            </h1>
-
-            {/* subtext */}
-            <p style={{
-                fontSize: 'clamp(15px, 2vw, 17px)', color: 'var(--text-secondary)', lineHeight: 1.75,
-                maxWidth: 560, margin: '0 auto 40px',
-                animation: 'fadeUp 0.7s ease 0.2s both',
-            }}>
-                The network for students of NIT Jamshedpur. Discover opportunities, share your story, attend events, and collaborate with your peers.
-            </p>
-
-            {/* CTAs */}
-            <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', animation: 'fadeUp 0.7s ease 0.3s both' }}>
-                <Link to={user ? '/directory' : '/register'} className="primary-btn" style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 9,
-                    background: `linear-gradient(135deg, var(--blue-light) 0%, var(--blue) 100%)`,
-                    borderRadius: 10, padding: '14px 28px',
-                    color: '#fff', fontSize: 14, fontWeight: 700,
-                    textDecoration: 'none', letterSpacing: '0.04em',
-                    boxShadow: `0 6px 28px rgba(32,54,113,0.35)`,
-                }}>
-                    {user ? 'Explore Directory' : 'Join the Network'}
-                    <FaArrowRight style={{ fontSize: 12 }} />
-                </Link>
-                <Link to="/jobs" className="ghost-btn" style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 9,
-                    background: 'transparent',
-                    border: '1px solid var(--border)',
-                    borderRadius: 10, padding: '14px 28px',
-                    color: 'var(--text-primary)', fontSize: 14, fontWeight: 600,
-                    textDecoration: 'none',
-                }}>
-                    Browse Jobs <FaBriefcase style={{ fontSize: 12 }} />
-                </Link>
-            </div>
-
-            {/* trust row */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(16px, 4vw, 32px)', marginTop: 56, flexWrap: 'wrap', animation: 'fadeUp 0.7s ease 0.45s both' }}>
-                {[['500+', 'Alumni'], ['50+', 'Jobs'], ['30+', 'Events'], ['1960', 'Est. Year']].map(([num, label]) => (
-                    <div key={label} style={{ textAlign: 'center', minWidth: 80 }}>
-                        <div style={{ fontFamily: "'Sora', sans-serif", fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{num}</div>
-                        <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{label === 'Alumni' ? 'Students' : label}</div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    </section>
-);
-
-/* ── features grid ───────────────────────────────────────────────────────── */
-const features = [
-    { icon: FaUsers, title: 'Alumni Directory', desc: 'Search and connect with NIT JSR students by department, batch, or skill set.', href: '/directory', label: 'Browse Directory' },
-    { icon: FaBriefcase, title: 'Job Board', desc: 'Discover and post career opportunities exclusively within the NIT Jamshedpur Alumni network.', href: '/jobs', label: 'View Jobs' },
-    { icon: FaCalendarAlt, title: 'Events & Reunions', desc: 'RSVP to upcoming gatherings, workshops, seminars, and meetups.', href: '/events', label: 'See Events' },
-    { icon: FaNewspaper, title: 'News & Stories', desc: 'Share achievements, read inspiring student journeys, and stay updated with institute news.', href: '/news', label: 'Read Stories' },
-    { icon: FaHandshake, title: 'Mentorship', desc: 'Connect with experienced students and seniors for guidance on career growth and industry transitions.', href: '/directory', label: 'Find a Mentor' },
-    { icon: FaQuestionCircle, title: 'Help & FAQ', desc: 'Everything you need to get started — registration, profile setup, and portal features.', href: '/faq', label: 'Read FAQ' },
-];
-
-const Features = () => (
-    <section style={{ background: 'var(--bg)', padding: '80px 20px', transition: 'background 0.3s' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 56 }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--blue-faint)', border: '1px solid var(--blue-border)', borderRadius: 20, padding: '5px 14px', marginBottom: 18 }}>
-                    <FaGlobe style={{ color: 'var(--blue-light)', fontSize: 12 }} />
-                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-light)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Everything in One Place</span>
-                </div>
-                <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 14px', letterSpacing: '-0.6px' }}>
-                    Built for the Alumni Community
-                </h2>
-                <p style={{ fontSize: 15, color: 'var(--text-secondary)', maxWidth: 500, margin: '0 auto' }}>
-                    Every feature designed to strengthen the bond between NIT Jamshedpur students worldwide.
-                </p>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
-                {features.map(f => (
-                    <div key={f.title} className="feature-card" style={{
-                        background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-                        borderRadius: 14, padding: '26px 26px 22px',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s'
-                    }}>
-                        <div style={{ width: 44, height: 44, borderRadius: 11, background: `linear-gradient(135deg, var(--blue), var(--blue-dark))`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18, boxShadow: `0 4px 16px rgba(32,54,113,0.3)` }}>
-                            <f.icon style={{ color: '#fff', fontSize: 17 }} />
-                        </div>
-                        <h3 style={{ fontFamily: "'Sora', sans-serif", fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 10px' }}>{f.title}</h3>
-                        <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7, margin: '0 0 18px' }}>{f.desc}</p>
-                        <Link to={f.href} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--blue-light)', textDecoration: 'none', letterSpacing: '0.04em' }}>
-                            {f.label} <FaArrowRight style={{ fontSize: 10 }} />
-                        </Link>
-                    </div>
-                ))}
-            </div>
-        </div>
-    </section>
-);
-
-/* ── stats banner ────────────────────────────────────────────────────────── */
-const Stats = () => (
-    <section style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', padding: '64px 20px', transition: 'background 0.3s' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-            {[
-                { num: '1960', label: 'Founded', sub: 'Formerly RIT Jamshedpur' },
-                { num: '60+', label: 'Years Legacy', sub: 'Of engineering excellence' },
-                { num: '500+', label: 'Students', sub: 'And growing daily' },
-                { num: '20+', label: 'Departments', sub: 'Across all disciplines' },
-                { num: '100%', label: 'Free to Join', sub: 'No membership fees' },
-            ].map(s => (
-                <div key={s.label} className="stat-card" style={{
-                    textAlign: 'center', padding: '28px 20px',
-                    borderRadius: 12, background: 'transparent',
-                    border: '1px solid transparent',
-                    cursor: 'default',
-                    transition: 'all 0.3s'
-                }}>
-                    <div style={{ fontFamily: "'Sora', sans-serif", fontSize: 32, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, marginBottom: 6 }}>
-                        {s.num}
-                    </div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-light)', marginBottom: 4, letterSpacing: '0.04em' }}>{s.label}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{s.sub}</div>
-                </div>
-            ))}
-        </div>
-    </section>
-);
-
-/* ── CTA strip ───────────────────────────────────────────────────────────── */
-const CTAStrip = ({ user }) => (
-    <section style={{ background: 'var(--bg)', padding: '80px 20px' }}>
-        <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
-            <div style={{
-                background: `linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%)`,
-                borderRadius: 20, padding: '56px 48px',
-                position: 'relative', overflow: 'hidden',
-                boxShadow: `0 24px 64px rgba(32,54,113,0.3)`,
-            }}>
-                <div style={{ position: 'relative', zIndex: 1 }}>
-                    <div style={{ width: 56, height: 56, borderRadius: 14, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                        <FaGraduationCap style={{ color: '#fff', fontSize: 24 }} />
-                    </div>
-                    <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 'clamp(24px, 5vw, 30px)', fontWeight: 800, color: '#fff', margin: '0 0 14px', letterSpacing: '-0.4px' }}>
-                        {user ? 'Welcome back!' : 'Ready to reconnect?'}
-                    </h2>
-                    <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', margin: '0 0 32px', lineHeight: 1.65 }}>
-                        {user
-                            ? 'Your Alumni network is waiting. Explore jobs, events, and connect with fellow students.'
-                            : 'Join thousands of NIT Jamshedpur students already on the platform. Registration is free and takes under a minute.'
-                        }
-                    </p>
-                    <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-                        <Link to={user ? '/directory' : '/register'} style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 8,
-                            background: '#fff', borderRadius: 10, padding: '13px 28px',
-                            color: 'var(--blue)', fontSize: 13.5, fontWeight: 800,
-                            textDecoration: 'none', letterSpacing: '0.03em',
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
-                            transition: 'opacity 0.2s',
-                        }}
-                        >
-                            {user ? 'Browse Directory' : 'Create Free Account'}
-                            <FaArrowRight style={{ fontSize: 11 }} />
-                        </Link>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-);
-
-/* ── main ────────────────────────────────────────────────────────────────── */
 const Home = () => {
-    const { user } = useAuth();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [heroSearch, setHeroSearch] = useState('');
 
-    return (
-        <div style={{ fontFamily: "'DM Sans', sans-serif", background: 'var(--bg)', color: 'var(--text-primary)', transition: 'background 0.3s, color 0.3s' }}>
-            <Hero user={user} />
-            <Features />
-            <Stats />
-            <CTAStrip user={user} />
+  const handleHeroSearch = (e) => {
+    e.preventDefault();
+    if (heroSearch.trim()) {
+      navigate(`/directory?search=${encodeURIComponent(heroSearch.trim())}`);
+    } else {
+      navigate('/directory');
+    }
+  };
+
+  const alumniStories = [
+    {
+      name: 'Aranya Sen',
+      role: 'Staff Engineer at Google',
+      batch: 'Class of 2017 &bull; CSE',
+      location: 'Bengaluru, India',
+      quote:
+        'Connecting with senior alumni during my final year helped me prepare for systems engineering interviews. Now I mentor 3rd year students each semester.',
+      image:
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80&auto=format&fit=crop',
+    },
+    {
+      name: 'Dr. Megha Trivedi',
+      role: 'Principal Researcher at Microsoft Research',
+      batch: 'Class of 2014 &bull; ECE',
+      location: 'Redmond, WA',
+      quote:
+        'The NIT JSR alumni network provided the initial technical peer review for my doctoral research proposal. The trust across batches is unmatched.',
+      image:
+        'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&q=80&auto=format&fit=crop',
+    },
+    {
+      name: 'Rohit K. Verma',
+      role: 'Co-Founder & CEO, CleanVolt',
+      batch: 'Class of 2019 &bull; Mechanical',
+      location: 'Pune, India',
+      quote:
+        'We raised our initial seed angel round through connections made right here in the alumni directory with batchmates working in cleantech venture capital.',
+      image:
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80&auto=format&fit=crop',
+    },
+  ];
+
+  return (
+    <div>
+      {/* ── HERO SECTION ── */}
+      <section
+        style={{
+          position: 'relative',
+          minHeight: '560px',
+          display: 'flex',
+          alignItems: 'center',
+          backgroundColor: 'var(--color-navy)',
+          color: '#FFFFFF',
+          overflow: 'hidden',
+          padding: '80px 24px',
+        }}
+      >
+        {/* Background real campus photography with solid deep navy overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            opacity: 0.22,
+          }}
+        >
+          <img
+            src="https://images.unsplash.com/photo-1562774053-701939374585?w=1600&q=80&auto=format&fit=crop"
+            alt="University Campus Hall"
+            width="1600"
+            height="900"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
         </div>
-    );
+
+        <div
+          style={{
+            maxWidth: 1040,
+            margin: '0 auto',
+            width: '100%',
+            position: 'relative',
+            zIndex: 1,
+            textAlign: 'center',
+          }}
+        >
+          <div
+            className="badge badge-accent"
+            style={{
+              marginBottom: 20,
+              background: 'rgba(224, 122, 63, 0.2)',
+              color: '#F29A5C',
+              border: '1px solid rgba(242, 154, 92, 0.3)',
+            }}
+          >
+            Official NIT Jamshedpur Network
+          </div>
+
+          <h1
+            style={{
+              fontFamily: 'var(--font-heading)',
+              fontSize: 'clamp(32px, 5.5vw, 56px)',
+              fontWeight: 800,
+              lineHeight: 1.15,
+              color: '#FFFFFF',
+              letterSpacing: '-0.03em',
+              marginBottom: 20,
+            }}
+          >
+            Connect with 5,000+ NIT Jamshedpur alumni worldwide
+          </h1>
+
+          <p
+            style={{
+              fontSize: 'clamp(16px, 2vw, 19px)',
+              color: 'rgba(255, 255, 255, 0.85)',
+              maxWidth: 680,
+              margin: '0 auto 36px',
+              lineHeight: 1.6,
+            }}
+          >
+            Search by company, batch, or department. Get trusted referrals, 1-on-1 mentorship, and collaborate with fellow engineers.
+          </p>
+
+          {/* Alumni Quick Search Bar */}
+          <form
+            onSubmit={handleHeroSearch}
+            style={{
+              maxWidth: 600,
+              margin: '0 auto 36px',
+              display: 'flex',
+              gap: 8,
+              background: 'var(--color-surface)',
+              padding: 6,
+              borderRadius: 'var(--radius-sm)',
+              boxShadow: 'var(--shadow-lg)',
+            }}
+          >
+            <div
+              style={{
+                position: 'relative',
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <LuSearch
+                size={18}
+                strokeWidth={1.8}
+                style={{
+                  position: 'absolute',
+                  left: 12,
+                  color: 'var(--color-text-muted)',
+                }}
+              />
+              <input
+                type="text"
+                placeholder="Search alumni by name, company (Google, Tata...), or role"
+                value={heroSearch}
+                onChange={(e) => setHeroSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: 44,
+                  border: 'none',
+                  outline: 'none',
+                  paddingLeft: 38,
+                  paddingRight: 12,
+                  fontSize: 14,
+                  color: 'var(--color-text)',
+                  background: 'transparent',
+                  fontFamily: 'var(--font-body)',
+                }}
+              />
+            </div>
+            <Button type="submit" variant="primary" size="md">
+              Search Directory
+            </Button>
+          </form>
+
+          {/* Trust Metric Stats */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 'clamp(20px, 4vw, 48px)',
+              flexWrap: 'wrap',
+              borderTop: '1px solid rgba(255, 255, 255, 0.15)',
+              paddingTop: 28,
+            }}
+          >
+            {[
+              { num: '5,400+', label: 'Verified Alumni' },
+              { num: '42', label: 'Countries Represented' },
+              { num: '650+', label: 'Mentorship Sessions' },
+              { num: '1960', label: 'Institute Founded' },
+            ].map((stat) => (
+              <div key={stat.label} style={{ textAlign: 'center' }}>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-heading)',
+                    fontSize: 24,
+                    fontWeight: 800,
+                    color: '#FFFFFF',
+                  }}
+                >
+                  {stat.num}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    marginTop: 4,
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  {stat.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS (3 VARIED LAYOUTS, NOT IDENTICAL REPEATED CARDS) ── */}
+      <section style={{ padding: '80px 24px', maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 56 }}>
+          <div className="badge badge-accent" style={{ marginBottom: 12 }}>
+            Network Structure
+          </div>
+          <h2
+            style={{
+              fontFamily: 'var(--font-heading)',
+              fontSize: 'clamp(26px, 4vw, 36px)',
+              fontWeight: 800,
+              color: 'var(--color-text)',
+              marginBottom: 12,
+            }}
+          >
+            How Alumni Connect Works
+          </h2>
+          <p
+            style={{
+              fontSize: 16,
+              color: 'var(--color-text-secondary)',
+              maxWidth: 540,
+              margin: '0 auto',
+            }}
+          >
+            A dedicated system built so students and alumni forge genuine career connections.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+          {/* Step 1: Split Two-Column Layout */}
+          <div
+            className="card"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              overflow: 'hidden',
+            }}
+          >
+            <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--color-panel)',
+                  color: 'var(--color-accent)',
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 16,
+                  fontSize: 14,
+                }}
+              >
+                01
+              </div>
+              <h3
+                style={{
+                  fontFamily: 'var(--font-heading)',
+                  fontSize: 22,
+                  fontWeight: 800,
+                  color: 'var(--color-text)',
+                  marginBottom: 12,
+                }}
+              >
+                Verified Student & Alumni Profiles
+              </h3>
+              <p
+                style={{
+                  fontSize: 15,
+                  color: 'var(--color-text-secondary)',
+                  lineHeight: 1.7,
+                  marginBottom: 20,
+                }}
+              >
+                Every member signs in using their official institute credentials or graduation records. No fake profiles, recruiters, or unsolicited spam.
+              </p>
+              <div style={{ display: 'flex', gap: 16, fontSize: 13, color: 'var(--color-text-secondary)' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <LuShieldCheck size={16} style={{ color: 'var(--color-success)' }} /> Institute Email Verified
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <LuGraduationCap size={16} style={{ color: 'var(--color-accent)' }} /> Department Confirmed
+                </span>
+              </div>
+            </div>
+            <div style={{ background: 'var(--color-panel)', padding: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img
+                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&q=80&auto=format&fit=crop"
+                alt="Students collaborating"
+                width="600"
+                height="400"
+                loading="lazy"
+                style={{ borderRadius: 'var(--radius-sm)', width: '100%', maxHeight: 260, objectFit: 'cover' }}
+              />
+            </div>
+          </div>
+
+          {/* Step 2: Interactive Filter Showcase Layout */}
+          <div
+            className="card"
+            style={{
+              padding: '36px 36px',
+              background: 'var(--color-panel)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <div style={{ maxWidth: 840 }}>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-accent)',
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 16,
+                  fontSize: 14,
+                }}
+              >
+                02
+              </div>
+              <h3
+                style={{
+                  fontFamily: 'var(--font-heading)',
+                  fontSize: 22,
+                  fontWeight: 800,
+                  color: 'var(--color-text)',
+                  marginBottom: 12,
+                }}
+              >
+                Targeted Directory Filtering
+              </h3>
+              <p
+                style={{
+                  fontSize: 15,
+                  color: 'var(--color-text-secondary)',
+                  lineHeight: 1.7,
+                  marginBottom: 20,
+                }}
+              >
+                Filter the community by graduation batch, field of work, and global locations to find the exact senior who walked your path.
+              </p>
+
+              {/* Sample Quick Filters */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {[
+                  'Microsoft',
+                  'Tata Steel',
+                  'Google',
+                  'Amazon',
+                  'Bengaluru',
+                  'Silicon Valley',
+                  'Class of 2023',
+                  'Civil Engg',
+                  'CSE',
+                ].map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => navigate(`/directory?search=${encodeURIComponent(tag)}`)}
+                    className="btn btn-secondary btn-sm"
+                    style={{ background: 'var(--color-surface)', fontSize: 13 }}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Step 3: Privacy & Direct Introduction Layout */}
+          <div
+            className="card"
+            style={{
+              padding: '36px 36px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              gap: 20,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--color-panel)',
+                  color: 'var(--color-accent)',
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 16,
+                  fontSize: 14,
+                }}
+              >
+                03
+              </div>
+              <h3
+                style={{
+                  fontFamily: 'var(--font-heading)',
+                  fontSize: 22,
+                  fontWeight: 800,
+                  color: 'var(--color-text)',
+                  marginBottom: 12,
+                }}
+              >
+                Privacy-First Contact & Messaging
+              </h3>
+              <p
+                style={{
+                  fontSize: 15,
+                  color: 'var(--color-text-secondary)',
+                  lineHeight: 1.7,
+                  maxWidth: 720,
+                }}
+              >
+                Personal contact details are never exposed publicly. You can send structured introduction requests or direct on-platform messages, respecting alumni time and boundary preferences.
+              </p>
+            </div>
+            <div>
+              <Link to={user ? '/directory' : '/register'} className="btn btn-secondary btn-md">
+                Browse Directory <LuArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CAMPUS LANDMARKS & LIFE ── */}
+      <section style={{ padding: '60px 24px 80px', maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 44 }}>
+          <div className="badge badge-accent" style={{ marginBottom: 12 }}>
+            Campus Life & Landmarks
+          </div>
+          <h2
+            style={{
+              fontFamily: 'var(--font-heading)',
+              fontSize: 'clamp(26px, 4vw, 36px)',
+              fontWeight: 800,
+              color: 'var(--color-text)',
+              marginBottom: 10,
+            }}
+          >
+            Memories & Campus Infrastructure
+          </h2>
+          <p
+            style={{
+              fontSize: 15,
+              color: 'var(--color-text-secondary)',
+              maxWidth: 560,
+              margin: '0 auto',
+            }}
+          >
+            From the historic corridors of RIT to the modern Diamond Jubilee lecture halls, see how our campus continues to inspire generations.
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: 20,
+          }}
+        >
+          {[
+            {
+              title: 'Diamond Jubilee Lecture Hall Complex',
+              desc: 'State-of-the-art smart lecture theatres hosting academic symposiums and student conventions.',
+              img: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=600&q=80&auto=format&fit=crop',
+            },
+            {
+              title: 'Administrative Block & Central Quad',
+              desc: 'The iconic heart of NIT Jamshedpur connecting engineering departments and the central gardens.',
+              img: 'https://images.unsplash.com/photo-1562774053-701939374585?w=600&q=80&auto=format&fit=crop',
+            },
+            {
+              title: 'Central Computing & Technical Labs',
+              desc: 'Advanced research computing centres supporting machine learning, VLSI, and student robotics.',
+              img: 'https://images.unsplash.com/photo-1523050854058-8df90110c8f1?w=600&q=80&auto=format&fit=crop',
+            },
+            {
+              title: 'Annual Technical Fest — OJASS',
+              desc: 'One of Eastern India’s premier student festivals bringing together innovators, coders, and alumni mentors.',
+              img: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=600&q=80&auto=format&fit=crop',
+            },
+          ].map((item) => (
+            <div
+              key={item.title}
+              className="card"
+              style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+            >
+              <div style={{ height: 190, overflow: 'hidden' }}>
+                <img
+                  src={item.img}
+                  alt={item.title}
+                  width="600"
+                  height="360"
+                  loading="lazy"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    transition: 'transform 0.3s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.04)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                />
+              </div>
+              <div style={{ padding: 20, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-heading)',
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: 'var(--color-text)',
+                    marginBottom: 6,
+                  }}
+                >
+                  {item.title}
+                </h3>
+                <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.6, margin: 0 }}>
+                  {item.desc}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── FEATURED ALUMNI STORIES ── */}
+      <section
+        style={{
+          backgroundColor: 'var(--color-panel)',
+          padding: '80px 24px',
+          borderTop: '1px solid var(--color-border)',
+          borderBottom: '1px solid var(--color-border)',
+        }}
+      >
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div className="badge badge-accent" style={{ marginBottom: 12 }}>
+              Community Impact
+            </div>
+            <h2
+              style={{
+                fontFamily: 'var(--font-heading)',
+                fontSize: 'clamp(26px, 4vw, 36px)',
+                fontWeight: 800,
+                color: 'var(--color-text)',
+                marginBottom: 12,
+              }}
+            >
+              Featured Alumni Stories
+            </h2>
+            <p
+              style={{
+                fontSize: 15,
+                color: 'var(--color-text-secondary)',
+                maxWidth: 480,
+                margin: '0 auto',
+              }}
+            >
+              Real experiences from students and graduates building careers through the network.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: 24,
+            }}
+          >
+            {alumniStories.map((story) => (
+              <div
+                key={story.name}
+                className="card"
+                style={{
+                  padding: 28,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  background: 'var(--color-surface)',
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: 14.5,
+                    color: 'var(--color-text)',
+                    lineHeight: 1.7,
+                    fontStyle: 'italic',
+                    marginBottom: 24,
+                  }}
+                >
+                  "{story.quote}"
+                </p>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <img
+                    src={story.image}
+                    alt={story.name}
+                    width="48"
+                    height="48"
+                    loading="lazy"
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '2px solid var(--color-border)',
+                    }}
+                  />
+                  <div>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-heading)',
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: 'var(--color-text)',
+                      }}
+                    >
+                      {story.name}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12.5,
+                        color: 'var(--color-accent)',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {story.role}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11.5,
+                        color: 'var(--color-text-muted)',
+                        marginTop: 2,
+                      }}
+                      dangerouslySetInnerHTML={{ __html: story.batch }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CALL TO ACTION BANNER ── */}
+      <section style={{ padding: '80px 24px' }}>
+        <div
+          style={{
+            maxWidth: 880,
+            margin: '0 auto',
+            textAlign: 'center',
+            backgroundColor: 'var(--color-navy)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'clamp(40px, 6vw, 64px) 24px',
+            color: '#FFFFFF',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <h2
+            style={{
+              fontFamily: 'var(--font-heading)',
+              fontSize: 'clamp(24px, 4vw, 34px)',
+              fontWeight: 800,
+              color: '#FFFFFF',
+              marginBottom: 14,
+            }}
+          >
+            {user ? 'Welcome to your Alumni Network' : 'Ready to reconnect with your batch?'}
+          </h2>
+
+          <p
+            style={{
+              fontSize: 16,
+              color: 'rgba(255, 255, 255, 0.85)',
+              maxWidth: 540,
+              margin: '0 auto 32px',
+              lineHeight: 1.6,
+            }}
+          >
+            {user
+              ? 'Browse the directory, message fellow alumni, or view upcoming campus events.'
+              : 'Join today with your institute email. Create your profile, search the alumni directory, and unlock opportunities.'}
+          </p>
+
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link
+              to={user ? '/directory' : '/register'}
+              className="btn btn-primary btn-lg"
+            >
+              {user ? 'Open Directory' : 'Create Student / Alumni Profile'} <LuArrowRight size={16} />
+            </Link>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
 };
 
 export default Home;
